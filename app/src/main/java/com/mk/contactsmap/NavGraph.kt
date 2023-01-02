@@ -12,7 +12,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.mk.contactsmap.screens.*
 import com.mk.contactsmap.ui.screens.*
 import com.mk.contactsmap.ui.viewModel.MainViewModel
 

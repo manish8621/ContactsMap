@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.mk.contactsmap.ui.screens
 
 import android.widget.Toast
@@ -9,8 +11,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.OutlinedTextField
-import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material3.*
 import androidx.compose.material.icons.filled.Clear
@@ -66,15 +66,14 @@ fun AddContactScreen(navController: NavHostController, viewModel: MainViewModel)
     var mail by rememberSaveable {
         mutableStateOf("")
     }
-    var location by rememberSaveable {
-        mutableStateOf("")
-    }
 
     //result from map screen
     val latitude = navController.currentBackStackEntry?.savedStateHandle?.getLiveData<Double>(LAT_KEY)?.observeAsState()
     val longitude = navController.currentBackStackEntry?.savedStateHandle?.getLiveData<Double>(LNG_KEY)?.observeAsState()
 
-    val imagePickerLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent(), onResult = {
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+        onResult = {
         it?.let { srcUri->
             //create folder if not exists
             val destDir = activity.filesDir.path+"/photos"
@@ -104,42 +103,45 @@ fun AddContactScreen(navController: NavHostController, viewModel: MainViewModel)
             }
         }
     })
+    Scaffold(
+            topBar = {
+                CustomAppBar(title = "Add contact",
+                    navController = navController,
+                    onDoneClicked = {
+                        //TODO:make it a separate function
+                        //check if valid
+                        if(isValid(name,number,mail)) {
+                            var locationSelected:Location? =null
+                            latitude?.value?.let { lat->
+                                longitude?.value?.let { lng->
+                                    locationSelected = Location("_",lat,lng)
+                                }
+                            }
 
-    Column(modifier = Modifier.fillMaxSize()){
-        CustomAppBar(title = "Add contact", onDoneClicked = {
-            //check if valid
-            if(isValid(name,number,mail)) {
+                            viewModel.handleEvent(
+                                Events.ContactCreate(
+                                    Contact(name = name, number = number, email = mail, photoPath = photo
+                                        , location = locationSelected)
+                                )
+                            )
 
-                var locationSelected:Location? =null
-                latitude?.value?.let { lat->
-                    longitude?.value?.let { lng->
-                        locationSelected = Location("_",lat,lng)
+                            Toast.makeText(activity, "Contact saved", Toast.LENGTH_SHORT).show()
+                            navController.navigateUp()
+                        }
+                        else
+                            Toast.makeText(activity,"details required", Toast.LENGTH_SHORT).show()
                     }
-                }
-
-                viewModel.handleEvent(
-                    Events.ContactCreate(
-                        Contact(name = name, number = number, email = mail, photoPath = photo
-                            , location = locationSelected)
-                    )
                 )
-
-                Toast.makeText(activity, "Contact saved", Toast.LENGTH_SHORT).show()
-                navController.navigateUp()
             }
-            else
-                Toast.makeText(activity,"details required", Toast.LENGTH_SHORT).show()
-        }
-        , onCancelClicked = { navController.navigateUp()}
-        )
-
+        ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(padding),
             horizontalAlignment = Alignment.CenterHorizontally
 
         ) {
+            Spacer(modifier = Modifier.height(16.dp))
                 Image(
                     painter = if(photo.isNotBlank())
                         rememberAsyncImagePainter(photo)
@@ -149,16 +151,19 @@ fun AddContactScreen(navController: NavHostController, viewModel: MainViewModel)
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.background)
+                        .background(MaterialTheme.colorScheme.primaryContainer)
                         .width(150.dp)
                         .height(150.dp)
                         .clickable { imagePickerLauncher.launch("image/*") }
-
                 )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            BorderLessCurvedTextField(value = name, onValChange = {name = it}, placeholder = "name")
+            BorderLessCurvedTextField(
+                value = name,
+                onValChange = {name = it},
+                placeholder = "name"
+            )
             BorderLessCurvedTextField(value = number?:""
                 , onValChange = {number = it}
                 , placeholder = "Phone"
@@ -168,30 +173,18 @@ fun AddContactScreen(navController: NavHostController, viewModel: MainViewModel)
                 , placeholder = "Email"
                 , keyboardType = KeyboardType.Email)
 
-
-            //TODO:change
-            OutlinedTextField(value = getLocationInfo(latitude?.value,longitude?.value),
-                onValueChange = {},
-                shape= RoundedCornerShape(40),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp)
-                    .clickable {
-                        navController.navigate(Screen.SelectLocationScreen.route)
-                    },
-                colors = TextFieldDefaults.textFieldColors(
-                    backgroundColor = MaterialTheme.colorScheme.background,
-                    unfocusedIndicatorColor = Color.Transparent
-                ),
-                enabled = false,
-                singleLine = true,
-                leadingIcon = {
+            BorderLessCurvedTextField(value = getLocationInfo(latitude?.value,longitude?.value)
+                , onValChange = {}
+                , placeholder = "Location"
+                , leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.LocationOn, tint = MaterialTheme.colorScheme.onSurface, contentDescription = "location icon"
                     )
-                },
-                placeholder = { Text(text = "Location") }
-            )
+                }
+                ,enabled =false
+                , onClick = {
+                navController.navigate(Screen.SelectLocationScreen.route)
+            })
         }
     }
 }

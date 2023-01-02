@@ -41,9 +41,9 @@ import com.mk.contactsmap.ui.viewModel.MainViewModel
 import java.io.File
 
 @Composable
-fun ShowContactsOnMapScreen(navHostController: NavHostController,viewModel: MainViewModel) {
+fun ShowContactsOnMapScreen(navController: NavHostController,viewModel: MainViewModel) {
     Column(modifier = Modifier.fillMaxSize()){
-        CustomAppBar(title ="All contacts")
+        CustomAppBar(title ="Contacts on map",navController)
         val contacts by viewModel.contactslist.observeAsState(initial = listOf())
         GoogleMap(modifier = Modifier.fillMaxSize(), uiSettings = MapUiSettings(zoomControlsEnabled = true)){
             contacts.forEach{

@@ -30,15 +30,10 @@ fun SelectLocationScreen(navController: NavHostController, viewModel: MainViewMo
         var locationSelected by rememberSaveable() {
             mutableStateOf(LatLng(0.0,0.0))
         }
-        val cameraPosition = rememberCameraPositionState(){
-            CameraPosition.fromLatLngZoom(locationSelected,12F)
-        }
 
         CustomAppBar(title = "select a location"
-            , onCancelClicked = {
-                navController.navigateUp()
-            },
-            onDoneClicked = if(locationSelected.latitude != 0.0 && locationSelected.longitude != 0.0)
+            ,navController=navController
+            ,onDoneClicked = if(locationSelected.latitude != 0.0 && locationSelected.longitude != 0.0)
             {
                 {
                     //set result
@@ -48,7 +43,9 @@ fun SelectLocationScreen(navController: NavHostController, viewModel: MainViewMo
                     }
                     navController.navigateUp()
                 }
-            }else null
+            }else {
+                null
+            }
         )
         Box(modifier = Modifier.fillMaxSize()){
             GoogleMap(

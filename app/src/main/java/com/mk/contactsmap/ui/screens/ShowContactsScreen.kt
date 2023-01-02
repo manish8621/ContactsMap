@@ -37,19 +37,20 @@ fun ShowContactsScreen(navController: NavHostController, viewModel: MainViewMode
     val uiState by viewModel.uiStateFlow.collectAsState()
     val contacts by viewModel.contactslist.observeAsState(listOf())
 
-    Box( contentAlignment = Alignment.Center, modifier = Modifier.padding(16.dp)) {
 
-        Column(modifier = Modifier.fillMaxSize()) {
-            CustomAppBar("All contacts")
-            ContactsList(contacts){
+    androidx.compose.material.Scaffold(topBar = {
+        CustomAppBar("All contacts",navController)
+    }
+    ){
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(it)) {
+            ContactsList(contacts) {
                 viewModel.handleEvent(Events.ContactDelete(it))
             }
+            //to show if no contacts
+            if (uiState is UiState.Idle && contacts.isEmpty())
+                Text(text = "No contacts", style = MaterialTheme.typography.labelMedium)
+
         }
-
-        //to show if no contacts
-        if (uiState is UiState.Idle && contacts.isEmpty())
-            Text(text = "No contacts", style = MaterialTheme.typography.labelMedium)
-
     }
 }
 
