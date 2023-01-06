@@ -2,6 +2,7 @@
 
 package com.mk.contactsmap.ui.screens
 
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -10,62 +11,49 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material3.*
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.*
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import coil.annotation.ExperimentalCoilApi
 import coil.compose.rememberAsyncImagePainter
 import com.mk.contactsmap.MainActivity
 import com.mk.contactsmap.R
 import com.mk.contactsmap.customComposables.BorderLessCurvedTextField
+import com.mk.contactsmap.customComposables.CountryCodeSelector
 import com.mk.contactsmap.customComposables.CustomAppBar
 import com.mk.contactsmap.isValid
 import com.mk.contactsmap.model.LAT_KEY
 import com.mk.contactsmap.model.LNG_KEY
-import com.mk.contactsmap.model.room.Contact
 import com.mk.contactsmap.model.room.Location
-import com.mk.contactsmap.ui.Events
-import com.mk.contactsmap.ui.viewModel.MainViewModel
+import com.mk.contactsmap.toast
+import com.mk.contactsmap.ui.Event
+import com.mk.contactsmap.ui.viewModel.AddContactsViewModel
 import java.io.File
 import java.io.IOException
-import kotlin.io.copyTo
 
 
-@OptIn(ExperimentalCoilApi::class)
 @Composable
-fun AddContactScreen(navController: NavHostController, viewModel: MainViewModel) {
+fun AddContactScreen(navController: NavHostController, viewModel: AddContactsViewModel = hiltViewModel()) {
     val activity = (LocalContext.current as MainActivity)
 
-    //TODO:Optimize
-    var photo by rememberSaveable {
-        mutableStateOf("")
-    }
-    var name by rememberSaveable {
-        mutableStateOf("")
-    }
-    var number by rememberSaveable {
-        mutableStateOf("")
-    }
-    var mail by rememberSaveable {
-        mutableStateOf("")
-    }
+    val photo =viewModel.photo.collectAsState()
+    val name =viewModel.name.collectAsState()
+    val countryCode =viewModel.countryCode.collectAsState()
+    val number =viewModel.number.collectAsState()
+    val mail =viewModel.mail.collectAsState()
+
 
     //result from map screen
     val latitude = navController.currentBackStackEntry?.savedStateHandle?.getLiveData<Double>(LAT_KEY)?.observeAsState()
@@ -91,7 +79,8 @@ fun AddContactScreen(navController: NavHostController, viewModel: MainViewModel)
                     dest.outputStream().use { outputStream->
                         inputStream.copyTo(outputStream)
                         //the uri of the copied file will be stored in database
-                        photo = ( dest.path.toString())
+                        viewModel.setPhotoPath( dest.path.toString())
+                        Log.i("TAG", dest.path.toString())
                     }
                 }
             }
@@ -110,7 +99,7 @@ fun AddContactScreen(navController: NavHostController, viewModel: MainViewModel)
                     onDoneClicked = {
                         //TODO:make it a separate function
                         //check if valid
-                        if(isValid(name,number,mail)) {
+                        if(isValid(name.value,number.value,mail.value)) {
                             var locationSelected:Location? =null
                             latitude?.value?.let { lat->
                                 longitude?.value?.let { lng->
@@ -119,10 +108,7 @@ fun AddContactScreen(navController: NavHostController, viewModel: MainViewModel)
                             }
 
                             viewModel.handleEvent(
-                                Events.ContactCreate(
-                                    Contact(name = name, number = number, email = mail, photoPath = photo
-                                        , location = locationSelected)
-                                )
+                                Event.ContactCreate( location = locationSelected)
                             )
 
                             Toast.makeText(activity, "Contact saved", Toast.LENGTH_SHORT).show()
@@ -143,33 +129,44 @@ fun AddContactScreen(navController: NavHostController, viewModel: MainViewModel)
         ) {
             Spacer(modifier = Modifier.height(16.dp))
                 Image(
-                    painter = if(photo.isNotBlank())
-                        rememberAsyncImagePainter(photo)
-                    else
-                        painterResource(R.drawable.person_24),
+                    painter = if(photo.value.isNullOrEmpty())
+                            painterResource(R.drawable.person_24)
+                        else {
+                            rememberAsyncImagePainter(photo.value)
+                        },
                     contentDescription = "contact photo",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer)
+                        .background(MaterialTheme.colorScheme.secondary)
                         .width(150.dp)
                         .height(150.dp)
                         .clickable { imagePickerLauncher.launch("image/*") }
                 )
-
             Spacer(modifier = Modifier.height(16.dp))
-
             BorderLessCurvedTextField(
-                value = name,
-                onValChange = {name = it},
+                value = name.value,
+                onValChange = {viewModel.setName(it) },
                 placeholder = "name"
             )
-            BorderLessCurvedTextField(value = number?:""
-                , onValChange = {number = it}
-                , placeholder = "Phone"
-                , keyboardType = KeyboardType.Number)
-            BorderLessCurvedTextField(value = mail?:""
-                , onValChange = {mail = it}
+
+
+            //for phone number
+            Row(modifier = Modifier.fillMaxWidth()
+            ){
+                CountryCodeSelector(value = countryCode.value, onSelected = {
+                    code-> viewModel.setCountryCode(code)
+                })
+                BorderLessCurvedTextField(
+                    value = number.value,
+                    onValChange = { viewModel.setNumber(it) },
+                    placeholder = "Phone",
+                    keyboardType = KeyboardType.Number
+                )
+            }
+
+            BorderLessCurvedTextField(value = mail.value
+                , onValChange = {viewModel.setMail(it)}
                 , placeholder = "Email"
                 , keyboardType = KeyboardType.Email)
 

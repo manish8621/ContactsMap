@@ -9,6 +9,8 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -25,17 +27,16 @@ val bottomNavItems =listOf(
 fun SetupNavGraph(
     navController: NavHostController,
     paddingValues: PaddingValues,
-    viewModel: MainViewModel
 ) {
     NavHost(
         navController = navController,
         startDestination = Screen.ShowContactsScreen.route,
         modifier = Modifier.padding(paddingValues = paddingValues)
     ){
-        composable(route = Screen.AddContactScreen.route) { AddContactScreen(navController,viewModel) }
-        composable(route = Screen.ShowContactsScreen.route) { ShowContactsScreen(navController,viewModel) }
-        composable(route = Screen.SelectLocationScreen.route) { SelectLocationScreen(navController,viewModel) }
-        composable(route = Screen.ShowContactsOnMapScreen.route) { ShowContactsOnMapScreen(navController,viewModel) }
+        composable(route = Screen.AddContactScreen.route) { AddContactScreen(navController) }
+        composable(route = Screen.ShowContactsScreen.route) { ShowContactsScreen(navController) }
+        composable(route = Screen.SelectLocationScreen.route) { SelectLocationScreen(navController) }
+        composable(route = Screen.ShowContactsOnMapScreen.route) { ShowContactsOnMapScreen(navController) }
     }
 }
 data class BottomNavItem(

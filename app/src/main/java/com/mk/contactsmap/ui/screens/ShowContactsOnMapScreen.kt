@@ -2,6 +2,7 @@ package com.mk.contactsmap.ui.screens
 
 import android.graphics.*
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -26,6 +27,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import coil.compose.*
 import coil.compose.ImagePainter
@@ -36,12 +39,13 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
 import com.mk.contactsmap.R
 import com.mk.contactsmap.customComposables.CustomAppBar
+import com.mk.contactsmap.isValid
 import com.mk.contactsmap.model.room.Contact
 import com.mk.contactsmap.ui.viewModel.MainViewModel
 import java.io.File
 
 @Composable
-fun ShowContactsOnMapScreen(navController: NavHostController,viewModel: MainViewModel) {
+fun ShowContactsOnMapScreen(navController: NavHostController,viewModel: MainViewModel= hiltViewModel()) {
     Column(modifier = Modifier.fillMaxSize()){
         CustomAppBar(title ="Contacts on map",navController)
         val contacts by viewModel.contactslist.observeAsState(initial = listOf())
@@ -56,18 +60,17 @@ fun ShowContactsOnMapScreen(navController: NavHostController,viewModel: MainView
 @Composable
 fun CustomMarker(contact: Contact) {
     contact.location?.let {  location->
-        var bitmapIcon = if(contact.photoPath.isNullOrEmpty())
-            BitmapFactory.decodeResource(LocalContext.current.resources,R.drawable.ic_launcher_foreground)
-        else {
-            Log.i("TAG", "ContactItem: ${File(contact.photoPath).exists()}")
+
+        val bitmapIcon = if(contact.photoPath.isValid()) {
             BitmapFactory.decodeFile(contact.photoPath)
         }
+        else {
+            BitmapFactory.decodeResource(LocalContext.current.resources, R.drawable.user_colored)
+        }
 
-
-
-            MarkerInfoWindow(
+        MarkerInfoWindow(
                 state = rememberMarkerState(position = LatLng(location.latitude,location.longitude))
-            , icon = BitmapDescriptorFactory.fromBitmap(bitmapIcon.resize(100,100).asCircledBitmap())
+            , icon = BitmapDescriptorFactory.fromBitmap(bitmapIcon.resize(200,200).asCircledBitmap())
             ){
                 Column(modifier = Modifier
                     .clip(RoundedCornerShape(10))
@@ -95,7 +98,22 @@ fun CustomMarker(contact: Contact) {
         }
 }
 
-private fun Bitmap.resize(height:Int,width:Int) = Bitmap.createScaledBitmap(this,width,height,false)
+private fun Bitmap.resize(maxHeight:Int,maxWidth:Int) :Bitmap{
+    val ratioBitmap = (this.width.toFloat())/(this.height.toFloat())
+    val ratioMax = (maxWidth.toFloat())/(maxHeight.toFloat())
+
+    var finalWidth = maxWidth
+    var finalHeight = maxHeight
+
+    if(ratioMax>ratioBitmap){
+        finalWidth = (maxHeight.toFloat() * ratioBitmap).toInt()
+    }
+    else{
+        finalWidth = (maxWidth.toFloat() / ratioBitmap).toInt()
+    }
+
+    return Bitmap.createScaledBitmap(this, finalWidth, finalHeight, false)
+}
 
 private fun Bitmap.asCircledBitmap(): Bitmap {
     val output = Bitmap.createBitmap(this.width, this.height, Bitmap.Config.ARGB_8888)
