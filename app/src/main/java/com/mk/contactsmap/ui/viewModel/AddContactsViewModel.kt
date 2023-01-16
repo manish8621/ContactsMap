@@ -15,6 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import javax.inject.Named
 
 @HiltViewModel
 class AddContactsViewModel @Inject constructor(private val repository: ContactsRepository):ViewModel() {
@@ -52,9 +53,9 @@ class AddContactsViewModel @Inject constructor(private val repository: ContactsR
         }
     }
 
-    private fun addContact(contact: Contact) {
+    private fun addContact(vararg contact: Contact) {
         viewModelScope.launch(Dispatchers.IO){
-            repository.addContact(contact)
+            repository.addContact(*contact)
         }
     }
 }

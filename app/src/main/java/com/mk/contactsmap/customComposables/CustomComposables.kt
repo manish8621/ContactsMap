@@ -3,6 +3,8 @@
 package com.mk.contactsmap.customComposables
 
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,17 +16,24 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import coil.compose.rememberAsyncImagePainter
 import com.mk.contactsmap.*
 import com.mk.contactsmap.R
 import com.mk.contactsmap.model.COUNTRY_CODES
+import com.mk.contactsmap.navigation.NavItem
 
 @Composable
 fun PlaceHolder(text :String) {
@@ -42,6 +51,7 @@ fun BorderLessCurvedTextField(
     enabled: Boolean = true,
     readOnly: Boolean = false,
     keyboardType: KeyboardType = KeyboardType.Text,
+    visualTransformation:VisualTransformation = VisualTransformation.None,
     onClick: (() -> Unit)? = null
 ) {
     OutlinedTextField(
@@ -67,7 +77,8 @@ fun BorderLessCurvedTextField(
         singleLine = true,
         readOnly = readOnly,
         placeholder = { Text(text = placeholder) },
-        keyboardOptions = KeyboardOptions(keyboardType = keyboardType)
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+        visualTransformation = visualTransformation
     )
 }
 
@@ -173,7 +184,12 @@ fun RowScope.BorderLessCurvedTextField(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CustomAppBar(title:String= stringResource(id = R.string.app_name),
-                 navController: NavHostController, onDoneClicked: (() -> Unit)? = null){
+                 navController: NavHostController,
+                 onRefreshClicked:(()->Unit)?=null,
+                 onDeleteClicked:(()->Unit)?=null,
+                 onDoneClicked: (() -> Unit)? = null,
+                 overFlowMenu:@Composable (()->Unit)?=null
+                 ){
         TopAppBar(
             title = {Text(text= title)}
             ,colors = TopAppBarDefaults.topAppBarColors(
@@ -190,24 +206,39 @@ fun CustomAppBar(title:String= stringResource(id = R.string.app_name),
                         }
                 }
             ,actions={
+                onRefreshClicked?.let{
+                    IconButton(onClick = onRefreshClicked) {
+                        Icon(imageVector = Icons.Default.Refresh, contentDescription = "refresh btn")
+                    }
+                }
+                onDeleteClicked?.let{
+                    IconButton(onClick = onDeleteClicked) {
+                        Icon(imageVector = Icons.Default.Delete, contentDescription = "delete btn")
+                    }
+                }
                 onDoneClicked?.let{
                     IconButton(onClick = onDoneClicked) {
                         Icon(imageVector = Icons.Default.Done, contentDescription = "done btn")
                     }
+                }
+
+
+                overFlowMenu?.let{
+                    overFlowMenu()
                 }
             }
         )
 }
 
 @Composable
-fun CustomBottomNavigationBar(navController:NavHostController) {
+fun CustomBottomNavigationBar(navController:NavHostController,navItems:List<NavItem>) {
 
     NavigationBar() {
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         //get current screen route
         val currentRoute = navBackStackEntry?.destination?.route
 
-        bottomNavItems.forEach{
+        navItems.forEach{
                 navItem->
             NavigationBarItem(
                 //check if current route and the item's route matches
@@ -264,9 +295,11 @@ fun CountryCodeSelector(
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier.width(
-                100.dp
-            ).height(200.dp)
+            modifier = Modifier
+                .width(
+                    100.dp
+                )
+                .height(200.dp)
         ) {
 
             codes.forEach { code ->
@@ -283,11 +316,72 @@ fun CountryCodeSelector(
 }
 
 
+/*
+* must use OverFlowMenuItem to populate the menu
+**/
+@Composable
+fun OverFlowMenu( overFlowMenuItems: @Composable ((expanded:MutableState<Boolean>) -> Unit) ) {
+    val expanded = remember {
+        mutableStateOf(false)
+    }
+    IconButton(onClick = {
+        expanded.value= !expanded.value
+    }) {
+        Icon(imageVector = Icons.Default.MoreVert, contentDescription = "overflow menu button")
+    }
+    DropdownMenu(expanded = expanded.value,
+        offset = DpOffset(20.dp,10.dp),
+        onDismissRequest = { expanded.value=false }) {
+        overFlowMenuItems(expanded)
+    }
+}
+
+
+/*
+* this function can only be used with OverFlowMenu() composable
+* this function requires parameter expanded ,which will be provided by OverflowMenu
+* if expanded param is not passed menu might not behave like expected
+* **/
+@Composable
+fun OverFlowMenuItem(text:String,expanded: MutableState<Boolean>,onClick: (() -> Unit)) {
+    DropdownMenuItem(text = { Text(text) }
+        , onClick = {
+            expanded.value = false
+            onClick()
+        })
+}
+
+@Composable
+fun PhotoPreviewer(photo: String?, onDismissed: () -> Unit) {
+    //black overlay
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(Color.Black.copy(alpha = 0.8F))
+        .zIndex(5000F)
+        .clickable{ onDismissed() }.padding(vertical = 100.dp)
+    )
+    {
+        //picture
+        val imagePainter = if(photo.isNullOrEmpty())
+            painterResource(R.drawable.person_24)
+        else {
+            rememberAsyncImagePainter(photo)
+        }
+            Image(modifier = Modifier
+                .fillMaxSize().clip(RoundedCornerShape(10)),
+                painter = imagePainter,
+                contentScale = ContentScale.Crop,
+                contentDescription ="image"
+            )
+    }
+}
+
 @Preview
 @Composable
 fun CustomPreview() {
-//    Scaffold(topBar = { CustomAppBar("Contacts",rememberNavController(),{}) }, content = {
-//       Text("hello rold",Modifier.padding(it))
-//    })
-
+    OverFlowMenu(){
+        DropdownMenuItem(text = { Text("Delete all") }, onClick = {  })
+        DropdownMenuItem(text = { Text("Delete all") }, onClick = {  })
+        DropdownMenuItem(text = { Text("Delete all") }, onClick = {  })
+    }
 }

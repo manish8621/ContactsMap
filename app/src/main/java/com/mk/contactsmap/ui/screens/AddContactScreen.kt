@@ -6,9 +6,9 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -121,11 +121,11 @@ fun AddContactScreen(navController: NavHostController, viewModel: AddContactsVie
             }
         ) { padding ->
         Column(
-            modifier = Modifier
+            modifier = Modifier.verticalScroll(rememberScrollState(),true)
                 .fillMaxSize()
-                .padding(padding),
+                .padding(padding)
+                ,
             horizontalAlignment = Alignment.CenterHorizontally
-
         ) {
             Spacer(modifier = Modifier.height(16.dp))
                 Image(
@@ -170,6 +170,7 @@ fun AddContactScreen(navController: NavHostController, viewModel: AddContactsVie
                 , placeholder = "Email"
                 , keyboardType = KeyboardType.Email)
 
+
             BorderLessCurvedTextField(value = getLocationInfo(latitude?.value,longitude?.value)
                 , onValChange = {}
                 , placeholder = "Location"
@@ -194,9 +195,3 @@ fun getLocationInfo(lat:Double?,lng:Double?):String{
     return sb.toString()
 }
 
-//
-//@Preview(showBackground = true)
-//@Composable
-//fun AddContactPrev() {
-//    AddContactScreen(rememberNavController(), LocalContext as MainActivityviewModel)
-//}

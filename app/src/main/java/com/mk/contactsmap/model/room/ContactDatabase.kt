@@ -3,7 +3,7 @@ package com.mk.contactsmap.model.room
 import android.content.Context
 import androidx.room.*
 
-@Database( entities = [Contact::class], version = 1, exportSchema = false)
+@Database( entities = [Contact::class], version = 2, exportSchema = false)
 abstract class ContactDatabase :RoomDatabase(){
     abstract val contactDao:ContactDao
     companion object{

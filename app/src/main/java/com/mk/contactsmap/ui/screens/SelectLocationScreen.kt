@@ -221,7 +221,7 @@ fun SelectLocationScreen(navController: NavHostController, viewModel: SelectLoca
 fun geoLocate(geoCoder:Geocoder,locationName: String): LatLng? {
     var result:LatLng? = null
     try {
-        //TODO:replace this
+        //de
         geoCoder.getFromLocationName(locationName,1)?.firstOrNull()?.let {
                 result =  LatLng(it.latitude,it.longitude)
         }
